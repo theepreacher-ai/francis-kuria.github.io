@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blog — Francis Kuria</title>
+  <meta name="description" content="Technical articles on cybersecurity, CTF challenges, and security best practices by Francis Kuria." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Blog — Francis Kuria" />
+  <meta property="og:description" content="Technical articles on cybersecurity, CTF challenges, and security best practices." />
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+
+  <style>
+    :root{
+      --bg-start: #020617;
+      --bg-end: #0f172a;
+      --card: rgba(17,24,39,0.95);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --focus: #0a66c2;
+      --radius: 12px;
+      --container: 1100px;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth}
+    body{
+      font-family: "Times New Roman", Times, serif;
+      background: linear-gradient(180deg,var(--bg-start),var(--bg-end));
+      color:var(--text);
+      line-height:1.6;
+      font-size:16px;
+      -webkit-font-smoothing:antialiased;
+      min-height:100vh;
+    }
+
+    a { color:inherit; text-decoration:none; transition:all .2s ease; }
+    .container{ max-width:var(--container); margin:0 auto; padding:1.5rem 1.25rem; }
+
+    /* Header */
+    header{ 
+      padding:2rem 0; 
+      border-bottom:1px solid var(--border);
+      background:rgba(2,6,23,0.6);
+      backdrop-filter:blur(10px);
+      position:sticky;
+      top:0;
+      z-index:100;
+    }
+    .header-content{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:1rem;
+    }
+    .brand{ 
+      font-weight:700; 
+      font-size:1.25rem;
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+    }
+    .brand:hover{ color:var(--accent); }
+
+    nav ul{ 
+      list-style:none; 
+      display:flex; 
+      gap:1.5rem; 
+      align-items:center;
+    }
+    nav a{ 
+      color:var(--muted); 
+      font-weight:600; 
+      padding:8px 12px; 
+      border-radius:8px;
+    }
+    nav a:hover{ color:var(--accent); }
+
+    /* Hero */
+    .page-hero{
+      padding:4rem 0 3rem;
+      text-align:center;
+    }
+    h1{
+      font-size:clamp(2.5rem,6vw,4rem);
+      margin-bottom:1rem;
+      font-weight:700;
+      background:linear-gradient(135deg, var(--accent) 0%, #10b981 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .page-subtitle{
+      font-size:1.2rem;
+      color:var(--muted);
+      max-width:600px;
+      margin:0 auto 2rem;
+    }
+
+    /* Search & Filter */
+    .controls{
+      display:flex;
+      gap:1rem;
+      justify-content:space-between;
+      align-items:center;
+      margin:2rem 0;
+      flex-wrap:wrap;
+    }
+    .search-box{
+      flex:1;
+      min-width:250px;
+      max-width:400px;
+    }
+    .search-box input{
+      width:100%;
+      padding:12px 16px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--text);
+      font-family:inherit;
+      font-size:1rem;
+    }
+    .search-box input:focus{
+      outline:2px solid var(--accent);
+      border-color:var(--accent);
+    }
+    .filter-tags{
+      display:flex;
+      gap:0.5rem;
+      flex-wrap:wrap;
+    }
+    .tag-filter{
+      padding:8px 16px;
+      border-radius:999px;
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--muted);
+      cursor:pointer;
+      font-family:inherit;
+      font-weight:600;
+      font-size:0.9rem;
+      transition:all .2s ease;
+    }
+    .tag-filter:hover, .tag-filter.active{
+      background:var(--accent);
+      color:#052e16;
+      border-color:var(--accent);
+    }
+
+    /* Blog Grid */
+    .blog-grid{
+      display:grid;
+      gap:2rem;
+      grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      margin:2rem 0 4rem;
+    }
+    .blog-card{
+      background:var(--card);
+      border-radius:var(--radius);
+      overflow:hidden;
+      border:1px solid var(--border);
+      transition:all .3s ease;
+      display:flex;
+      flex-direction:column;
+      cursor:pointer;
+    }
+    .blog-card:hover{
+      transform:translateY(-8px);
+      border-color:var(--accent);
+      box-shadow:0 12px 30px rgba(34,197,94,0.2);
+    }
+    .blog-thumb{
+      width:100%;
+      height:200px;
+      object-fit:cover;
+      background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:3rem;
+    }
+    .blog-content{
+      padding:1.5rem;
+      flex-grow:1;
+      display:flex;
+      flex-direction:column;
+    }
+    .blog-meta{
+      display:flex;
+      gap:1rem;
+      margin-bottom:0.75rem;
+      font-size:0.85rem;
+      color:var(--muted);
+      align-items:center;
+    }
+    .blog-tags{
+      display:flex;
+      gap:0.5rem;
+      flex-wrap:wrap;
+      margin-bottom:0.75rem;
+    }
+    .tag{
+      background:#0b1220;
+      color:var(--accent);
+      padding:0.25rem 0.6rem;
+      border-radius:6px;
+      font-size:0.75rem;
+      font-weight:600;
+      border:1px solid rgba(34,197,94,0.2);
+    }
+    .blog-title{
+      font-size:1.4rem;
+      margin-bottom:0.75rem;
+      color:var(--text);
+      font-weight:700;
+      line-height:1.3;
+    }
+    .blog-excerpt{
+      color:var(--muted);
+      margin-bottom:1rem;
+      flex-grow:1;
+      line-height:1.6;
+    }
+    .read-more{
+      color:var(--accent);
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      gap:0.5rem;
+    }
+    .blog-card:hover .read-more{
+      gap:0.75rem;
+    }
+
+    /* Featured Post */
+    .featured{
+      background:var(--card);
+      border-radius:var(--radius);
+      border:2px solid var(--accent);
+      overflow:hidden;
+      margin:2rem 0;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:0;
+    }
+    .featured-image{
+      background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:6rem;
+      min-height:350px;
+    }
+    .featured-content{
+      padding:2.5rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .featured-badge{
+      background:var(--accent);
+      color:#052e16;
+      padding:0.4rem 0.8rem;
+      border-radius:6px;
+      font-size:0.75rem;
+      font-weight:700;
+      display:inline-block;
+      margin-bottom:1rem;
+      width:fit-content;
+      letter-spacing:0.5px;
+    }
+    .featured-title{
+      font-size:2rem;
+      margin-bottom:1rem;
+      line-height:1.2;
+    }
+    .featured-excerpt{
+      color:var(--muted);
+      margin-bottom:1.5rem;
+      font-size:1.1rem;
+    }
+
+    footer{ 
+      text-align:center; 
+      padding:2.5rem 0; 
+      color:var(--muted); 
+      font-size:.9rem;
+      border-top:1px solid var(--border);
+      margin-top:3rem;
+    }
+
+    .btn{
+      display:inline-flex; 
+      align-items:center; 
+      gap:.5rem; 
+      padding:11px 18px; 
+      border-radius:999px;
+      font-weight:700; 
+      cursor:pointer; 
+      border:none; 
+      font-family: inherit;
+      transition:all .2s ease;
+      font-size:0.95rem;
+    }
+    .btn-primary{ 
+      background:var(--accent); 
+      color:#052e16; 
+    }
+    .btn-primary:hover{ 
+      background:var(--accent-hover); 
+      transform:translateY(-2px); 
+    }
+
+    @media (max-width:768px){
+      .featured{
+        grid-template-columns:1fr;
+      }
+      .featured-image{
+        min-height:250px;
+      }
+      .controls{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .search-box{
+        max-width:100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <a href="../index.html" class="brand">
+          <span>🛡️</span>
+          <span>Francis Kuria</span>
+        </a>
+        <nav>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../index.html#work">Projects</a></li>
+            <li><a href="index.html" style="color:var(--accent)">Blog</a></li>
+            <li><a href="../index.html#contact">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero container">
+      <h1>Security Insights</h1>
+      <p class="page-subtitle">Deep dives into cybersecurity, practical CTF walkthroughs, and lessons learned from the trenches of threat detection and defense.</p>
+    </section>
+
+    <div class="container">
+      <!-- Featured Post -->
+      <article class="featured" onclick="window.location='sql-injection-guide.html'">
+        <div class="featured-image">🔓</div>
+        <div class="featured-content">
+          <span class="featured-badge">FEATURED</span>
+          <h2 class="featured-title">Understanding SQL Injection: A Practical Guide</h2>
+          <p class="featured-excerpt">Deep dive into SQL injection vulnerabilities, how they work, and practical mitigation strategies. Includes hands-on examples, real-world attack scenarios, and prevention techniques every developer should know.</p>
+          <div class="blog-meta">
+            <span>📅 Jan 20, 2026</span>
+            <span>•</span>
+            <span>⏱️ 8 min read</span>
+            <span>•</span>
+            <span>💬 12 comments</span>
+          </div>
+          <a href="sql-injection-guide.html" class="btn btn-primary">Read Article →</a>
+        </div>
+      </article>
+
+      <!-- Search & Filters -->
+      <div class="controls">
+        <div class="search-box">
+          <input type="search" id="searchInput" placeholder="🔍 Search articles..." aria-label="Search articles">
+        </div>
+        <div class="filter-tags">
+          <button class="tag-filter active" data-tag="all">All</button>
+          <button class="tag-filter" data-tag="web-security">Web Security</button>
+          <button class="tag-filter" data-tag="ctf">CTF</button>
+          <button class="tag-filter" data-tag="api">API</button>
+          <button class="tag-filter" data-tag="tools">Tools</button>
+          <button class="tag-filter" data-tag="tutorials">Tutorials</button>
+        </div>
+      </div>
+
+      <!-- Blog Grid -->
+      <div class="blog-grid" id="blogGrid">
+        <article class="blog-card" data-tags="api web-security tutorials" onclick="window.location='api-security-practices.html'">
+          <div class="blog-thumb">🔐</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">API Security</span>
+              <span class="tag">Best Practices</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Jan 15, 2026</span>
+              <span>•</span>
+              <span>⏱️ 6 min read</span>
+            </div>
+            <h3 class="blog-title">5 Essential API Security Best Practices</h3>
+            <p class="blog-excerpt">Learn how to protect your API endpoints from common attacks including authentication bypass, rate limiting vulnerabilities, and data exposure risks. Real-world examples included.</p>
+            <a href="api-security-practices.html" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="ctf web-security tutorials" onclick="window.location='ctf-walkthrough-web.html'">
+          <div class="blog-thumb">🎯</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">CTF</span>
+              <span class="tag">Web Exploitation</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Jan 10, 2026</span>
+              <span>•</span>
+              <span>⏱️ 12 min read</span>
+            </div>
+            <h3 class="blog-title">CTF Walkthrough: Web Exploitation Challenge</h3>
+            <p class="blog-excerpt">Step-by-step breakdown of solving a complex web exploitation CTF challenge. Covers reconnaissance, vulnerability discovery, exploitation techniques, and post-exploitation analysis.</p>
+            <a href="ctf-walkthrough-web.html" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="tools tutorials" onclick="window.location='#'">
+          <div class="blog-thumb">🛠️</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">Tools</span>
+              <span class="tag">Automation</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Jan 5, 2026</span>
+              <span>•</span>
+              <span>⏱️ 10 min read</span>
+            </div>
+            <h3 class="blog-title">Building a Custom Vulnerability Scanner with Python</h3>
+            <p class="blog-excerpt">Create your own automated vulnerability scanner from scratch. Learn about network scanning, service enumeration, and vulnerability detection using Python libraries.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="web-security tutorials" onclick="window.location='#'">
+          <div class="blog-thumb">🌐</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">XSS</span>
+              <span class="tag">Web Security</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Dec 28, 2025</span>
+              <span>•</span>
+              <span>⏱️ 7 min read</span>
+            </div>
+            <h3 class="blog-title">Cross-Site Scripting (XSS): Beyond the Basics</h3>
+            <p class="blog-excerpt">Advanced XSS techniques including DOM-based XSS, bypassing filters, and exploiting modern JavaScript frameworks. Practical defense strategies included.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="ctf tutorials" onclick="window.location='#'">
+          <div class="blog-thumb">🧩</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">CTF</span>
+              <span class="tag">Cryptography</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Dec 20, 2025</span>
+              <span>•</span>
+              <span>⏱️ 9 min read</span>
+            </div>
+            <h3 class="blog-title">Cracking the Code: Introduction to CTF Crypto Challenges</h3>
+            <p class="blog-excerpt">Master the fundamentals of cryptography challenges in CTFs. Learn about classical ciphers, RSA attacks, and common crypto vulnerabilities with hands-on examples.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="tools web-security" onclick="window.location='#'">
+          <div class="blog-thumb">⚙️</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">Burp Suite</span>
+              <span class="tag">Tools</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Dec 15, 2025</span>
+              <span>•</span>
+              <span>⏱️ 11 min read</span>
+            </div>
+            <h3 class="blog-title">Mastering Burp Suite: Advanced Techniques</h3>
+            <p class="blog-excerpt">Go beyond basic proxy usage. Learn advanced Burp Suite techniques including custom extensions, automated scanning workflows, and effective manual testing strategies.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="web-security tutorials" onclick="window.location='#'">
+          <div class="blog-thumb">📊</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">Authentication</span>
+              <span class="tag">Security</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Dec 10, 2025</span>
+              <span>•</span>
+              <span>⏱️ 8 min read</span>
+            </div>
+            <h3 class="blog-title">JWT Security: Common Pitfalls and Best Practices</h3>
+            <p class="blog-excerpt">Explore common JWT implementation vulnerabilities and learn how to secure token-based authentication properly. Includes real-world attack scenarios and fixes.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="ctf tutorials" onclick="window.location='#'">
+          <div class="blog-thumb">🏴</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">CTF</span>
+              <span class="tag">Binary Exploitation</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Dec 5, 2025</span>
+              <span>•</span>
+              <span>⏱️ 15 min read</span>
+            </div>
+            <h3 class="blog-title">Binary Exploitation 101: Buffer Overflow Basics</h3>
+            <p class="blog-excerpt">Comprehensive introduction to buffer overflow vulnerabilities. Learn stack mechanics, exploitation techniques, and how to write your first exploit from scratch.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+
+        <article class="blog-card" data-tags="api tools" onclick="window.location='#'">
+          <div class="blog-thumb">📡</div>
+          <div class="blog-content">
+            <div class="blog-tags">
+              <span class="tag">GraphQL</span>
+              <span class="tag">API Security</span>
+            </div>
+            <div class="blog-meta">
+              <span>📅 Nov 28, 2025</span>
+              <span>•</span>
+              <span>⏱️ 7 min read</span>
+            </div>
+            <h3 class="blog-title">GraphQL Security: Testing and Hardening Your APIs</h3>
+            <p class="blog-excerpt">Learn to identify and exploit common GraphQL vulnerabilities including introspection attacks, nested queries, and authorization bypasses. Plus hardening strategies.</p>
+            <a href="#" class="read-more">Read more →</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Francis Kuria • Sharing security knowledge, one post at a time</p>
+      <p style="margin-top:0.5rem;"><a href="../index.html">← Back to Portfolio</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const blogGrid = document.getElementById('blogGrid');
+    const articles = blogGrid.querySelectorAll('.blog-card');
+    const filterButtons = document.querySelectorAll('.tag-filter');
+
+    let currentFilter = 'all';
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      filterArticles(query, currentFilter);
+    });
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.tag;
+        filterArticles(searchInput.value.toLowerCase(), currentFilter);
+      });
+    });
+
+    function filterArticles(query, tag) {
+      articles.forEach(article => {
+        const title = article.querySelector('.blog-title').textContent.toLowerCase();
+        const excerpt = article.querySelector('.blog-excerpt').textContent.toLowerCase();
+        const tags = article.dataset.tags || '';
+        
+        const matchesSearch = title.includes(query) || excerpt.includes(query);
+        const matchesTag = tag === 'all' || tags.includes(tag);
+
+        if (matchesSearch && matchesTag) {
+          article.style.display = 'flex';
+        } else {
+          article.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
