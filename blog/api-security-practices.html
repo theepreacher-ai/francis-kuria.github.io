@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>5 Essential API Security Best Practices — Francis Kuria</title>
+  <meta name="description" content="Learn how to protect your API endpoints from common attacks including authentication bypass, rate limiting, and data exposure vulnerabilities." />
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+
+  <style>
+    :root{
+      --bg-start: #020617;
+      --bg-end: #0f172a;
+      --card: rgba(17,24,39,0.95);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --focus: #0a66c2;
+      --radius: 12px;
+      --container: 800px;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth}
+    body{
+      font-family: "Times New Roman", Times, serif;
+      background: linear-gradient(180deg,var(--bg-start),var(--bg-end));
+      color:var(--text);
+      line-height:1.8;
+      font-size:18px;
+      -webkit-font-smoothing:antialiased;
+      min-height:100vh;
+    }
+
+    a { color:var(--accent); text-decoration:none; transition:all .2s ease; }
+    a:hover { color:var(--accent-hover); text-decoration:underline; }
+    .container{ max-width:var(--container); margin:0 auto; padding:1.5rem 1.25rem; }
+
+    header{ 
+      padding:1.5rem 0; 
+      border-bottom:1px solid var(--border);
+      background:rgba(2,6,23,0.8);
+      backdrop-filter:blur(10px);
+      position:sticky;
+      top:0;
+      z-index:100;
+    }
+    .header-content{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      max-width:var(--container);
+      margin:0 auto;
+      padding:0 1.25rem;
+    }
+    .brand{ 
+      font-weight:700; 
+      font-size:1.1rem;
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      color:var(--text);
+    }
+    .brand:hover{ color:var(--accent); text-decoration:none; }
+    .back-link{
+      color:var(--muted);
+      font-size:0.95rem;
+    }
+    .back-link:hover{
+      color:var(--accent);
+    }
+
+    .article-header{
+      padding:3rem 0 2rem;
+      border-bottom:1px solid var(--border);
+    }
+    .article-meta{
+      display:flex;
+      gap:1rem;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:0.95rem;
+      margin-bottom:1.5rem;
+    }
+    .tags{
+      display:flex;
+      gap:0.5rem;
+      flex-wrap:wrap;
+      margin-bottom:1rem;
+    }
+    .tag{
+      background:#0b1220;
+      color:var(--accent);
+      padding:0.35rem 0.75rem;
+      border-radius:6px;
+      font-size:0.85rem;
+      font-weight:600;
+      border:1px solid rgba(34,197,94,0.2);
+    }
+    h1{
+      font-size:clamp(2rem,5vw,2.75rem);
+      margin-bottom:1rem;
+      font-weight:700;
+      line-height:1.2;
+    }
+    .lead{
+      font-size:1.25rem;
+      color:var(--muted);
+      line-height:1.6;
+      margin-bottom:1.5rem;
+    }
+    .author-info{
+      display:flex;
+      align-items:center;
+      gap:1rem;
+      padding:1.5rem 0;
+    }
+    .author-avatar{
+      width:60px;
+      height:60px;
+      border-radius:50%;
+      border:2px solid var(--accent);
+    }
+    .author-details h4{
+      font-size:1rem;
+      margin-bottom:0.25rem;
+    }
+    .author-details p{
+      color:var(--muted);
+      font-size:0.9rem;
+    }
+
+    article{
+      padding:2.5rem 0;
+    }
+    article h2{
+      font-size:1.75rem;
+      margin:2.5rem 0 1rem;
+      font-weight:700;
+      color:var(--accent);
+    }
+    article h3{
+      font-size:1.35rem;
+      margin:2rem 0 1rem;
+      font-weight:700;
+    }
+    article p{
+      margin-bottom:1.5rem;
+      color:var(--text);
+    }
+    article ul, article ol{
+      margin-bottom:1.5rem;
+      padding-left:2rem;
+    }
+    article li{
+      margin-bottom:0.75rem;
+    }
+    article strong{
+      color:var(--accent);
+      font-weight:700;
+    }
+
+    pre{
+      background:#0b1220;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:1.25rem;
+      overflow-x:auto;
+      margin:1.5rem 0;
+      font-family:'Courier New', monospace;
+      font-size:0.9rem;
+      line-height:1.6;
+    }
+    code{
+      background:#0b1220;
+      padding:0.2rem 0.5rem;
+      border-radius:4px;
+      font-family:'Courier New', monospace;
+      font-size:0.9em;
+      color:#22c55e;
+    }
+    pre code{
+      background:transparent;
+      padding:0;
+      color:#e5e7eb;
+    }
+
+    .callout{
+      background:var(--card);
+      border-left:4px solid var(--accent);
+      border-radius:8px;
+      padding:1.25rem 1.5rem;
+      margin:1.5rem 0;
+    }
+    .callout-warning{
+      border-left-color:#f59e0b;
+    }
+    .callout-danger{
+      border-left-color:#ef4444;
+    }
+    .callout h4{
+      font-size:1.1rem;
+      margin-bottom:0.5rem;
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+    }
+    .callout p{
+      margin-bottom:0;
+      color:var(--muted);
+    }
+
+    .toc{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.5rem;
+      margin:2rem 0;
+    }
+    .toc h3{
+      font-size:1.1rem;
+      margin:0 0 1rem;
+      color:var(--accent);
+    }
+    .toc ul{
+      list-style:none;
+      padding:0;
+      margin:0;
+    }
+    .toc li{
+      margin-bottom:0.5rem;
+    }
+    .toc a{
+      color:var(--muted);
+      text-decoration:none;
+    }
+    .toc a:hover{
+      color:var(--accent);
+    }
+
+    .checklist{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.5rem;
+      margin:1.5rem 0;
+    }
+    .checklist h4{
+      margin-bottom:1rem;
+      color:var(--accent);
+    }
+    .checklist ul{
+      list-style:none;
+      padding:0;
+    }
+    .checklist li{
+      padding-left:2rem;
+      position:relative;
+      margin-bottom:0.75rem;
+    }
+    .checklist li:before{
+      content:'✓';
+      position:absolute;
+      left:0;
+      color:var(--accent);
+      font-weight:700;
+      font-size:1.2rem;
+    }
+
+    .article-footer{
+      border-top:1px solid var(--border);
+      padding:2rem 0;
+      margin-top:3rem;
+    }
+    .share-buttons{
+      display:flex;
+      gap:0.75rem;
+      margin-bottom:2rem;
+    }
+    .share-btn{
+      padding:10px 16px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      color:var(--text);
+      cursor:pointer;
+      transition:all .2s ease;
+      text-decoration:none;
+      font-size:0.9rem;
+      font-weight:600;
+    }
+    .share-btn:hover{
+      background:var(--accent);
+      color:#052e16;
+      border-color:var(--accent);
+      text-decoration:none;
+    }
+
+    .nav-posts{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1rem;
+      margin-top:2rem;
+    }
+    .nav-post{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.25rem;
+      transition:all .2s ease;
+      text-decoration:none;
+    }
+    .nav-post:hover{
+      border-color:var(--accent);
+      transform:translateY(-4px);
+      text-decoration:none;
+    }
+    .nav-label{
+      font-size:0.85rem;
+      color:var(--muted);
+      margin-bottom:0.5rem;
+    }
+    .nav-title{
+      color:var(--text);
+      font-weight:600;
+    }
+
+    footer{ 
+      text-align:center; 
+      padding:2.5rem 0; 
+      color:var(--muted); 
+      font-size:.9rem;
+      border-top:1px solid var(--border);
+    }
+
+    @media (max-width:768px){
+      body{ font-size:16px; }
+      .nav-posts{ grid-template-columns:1fr; }
+      .share-buttons{ flex-wrap:wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <a href="../index.html" class="brand">
+        <span>🛡️</span>
+        <span>Francis Kuria</span>
+      </a>
+      <a href="index.html" class="back-link">← All Posts</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="article-header">
+      <div class="tags">
+        <span class="tag">API Security</span>
+        <span class="tag">Best Practices</span>
+        <span class="tag">Web Security</span>
+      </div>
+      
+      <h1>5 Essential API Security Best Practices</h1>
+      
+      <p class="lead">APIs power modern applications but are frequently targeted by attackers. Learn how to protect your API endpoints from authentication bypass, rate limiting vulnerabilities, and data exposure risks.</p>
+      
+      <div class="article-meta">
+        <span>📅 January 15, 2026</span>
+        <span>•</span>
+        <span>⏱️ 6 min read</span>
+        <span>•</span>
+        <span>💬 8 comments</span>
+      </div>
+
+      <div class="author-info">
+        <img class="author-avatar" src="../assets/francis-avatar.webp" alt="Francis Kuria" width="60" height="60">
+        <div class="author-details">
+          <h4>Francis Kuria</h4>
+          <p>Cybersecurity Analyst & Technical Writer</p>
+        </div>
+      </div>
+    </div>
+
+    <article>
+      <div class="toc">
+        <h3>📑 Table of Contents</h3>
+        <ul>
+          <li><a href="#introduction">Why API Security Matters</a></li>
+          <li><a href="#authentication">1. Implement Robust Authentication</a></li>
+          <li><a href="#rate-limiting">2. Enforce Rate Limiting</a></li>
+          <li><a href="#input-validation">3. Validate All Input</a></li>
+          <li><a href="#data-exposure">4. Prevent Data Exposure</a></li>
+          <li><a href="#logging">5. Implement Comprehensive Logging</a></li>
+          <li><a href="#conclusion">Conclusion</a></li>
+        </ul>
+      </div>
+
+      <h2 id="introduction">Why API Security Matters</h2>
+      
+      <p>APIs have become the backbone of modern applications, enabling seamless communication between services, mobile apps, and third-party integrations. However, this connectivity comes with significant security challenges.</p>
+
+      <p>According to recent security research, API attacks increased by over 200% in the past two years. High-profile breaches at major companies have exposed millions of user records through insecure API implementations.</p>
+
+      <div class="callout callout-danger">
+        <h4>⚠️ Real-World Impact</h4>
+        <p>In 2019, a broken object level authorization vulnerability in a major social media platform's API exposed private posts of 6.8 million users. The API allowed authenticated users to access photos they shouldn't have permission to view.</p>
+      </div>
+
+      <p>Let's explore five essential practices that will significantly improve your API security posture.</p>
+
+      <h2 id="authentication">1. Implement Robust Authentication</h2>
+
+      <p>Authentication verifies who is making the request. Weak authentication is the gateway to most API security breaches.</p>
+
+      <h3>Use Strong Authentication Mechanisms</h3>
+
+      <p><strong>Never use Basic Auth over HTTP:</strong> It transmits credentials in base64 encoding, which is easily decoded.</p>
+
+      <pre><code>// Bad - Basic Auth header is easily decoded
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+
+// Decoded reveals: username:password</code></pre>
+
+      <p><strong>Implement OAuth 2.0 or JWT:</strong> Modern token-based authentication provides better security and flexibility.</p>
+
+      <pre><code>// Good - JWT token
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+
+      <h3>Secure Your JWT Implementation</h3>
+
+      <p>JWT tokens are powerful but can be vulnerable if misconfigured:</p>
+
+      <pre><code>// Secure JWT configuration in Node.js
+const jwt = require('jsonwebtoken');
+
+const token = jwt.sign(
+  { userId: user.id, role: user.role },
+  process.env.JWT_SECRET,  // Strong secret from environment
+  { 
+    expiresIn: '15m',       // Short expiration
+    algorithm: 'HS256'       // Strong algorithm
+  }
+);</code></pre>
+
+      <div class="callout callout-warning">
+        <h4>🔑 JWT Security Tips</h4>
+        <p>Always validate the algorithm in JWT headers. The "none" algorithm attack allows attackers to forge tokens. Never store sensitive data in JWT payload—it's base64 encoded, not encrypted.</p>
+      </div>
+
+      <h3>Implement API Key Rotation</h3>
+
+      <p>API keys should be rotated regularly and never hardcoded in client applications:</p>
+
+      <ul>
+        <li>Store keys securely in environment variables or secret management systems</li>
+        <li>Rotate keys every 90 days or after suspected compromise</li>
+        <li>Support multiple active keys during rotation periods</li>
+        <li>Revoke keys immediately when they're no longer needed</li>
+      </ul>
+
+      <h2 id="rate-limiting">2. Enforce Rate Limiting</h2>
+
+      <p>Rate limiting prevents abuse by restricting the number of requests a client can make within a time window. This protects against:</p>
+
+      <ul>
+        <li>Brute force attacks on authentication endpoints</li>
+        <li>Denial of Service (DoS) attempts</li>
+        <li>Data scraping and unauthorized harvesting</li>
+        <li>Resource exhaustion</li>
+      </ul>
+
+      <h3>Implement Tiered Rate Limits</h3>
+
+      <p>Different endpoints require different rate limiting strategies:</p>
+
+      <pre><code>// Express.js rate limiting example
+const rateLimit = require('express-rate-limit');
+
+// Strict limit for authentication
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 5,                     // 5 requests per window
+  message: 'Too many login attempts, please try again later'
+});
+
+app.post('/api/login', authLimiter, loginHandler);
+
+// More lenient for general API
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,   // 1 minute
+  max: 100                    // 100 requests per window
+});
+
+app.use('/api/', apiLimiter);</code></pre>
+
+      <h3>Return Proper Rate Limit Headers</h3>
+
+      <p>Inform clients about their rate limit status:</p>
+
+      <pre><code>HTTP/1.1 200 OK
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1642156800
+
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60</code></pre>
+
+      <div class="callout">
+        <h4>💡 Advanced Rate Limiting</h4>
+        <p>Consider implementing distributed rate limiting using Redis for multi-server deployments. This ensures consistent rate limiting across all instances of your API.</p>
+      </div>
+
+      <h2 id="input-validation">3. Validate All Input</h2>
+
+      <p>Never trust client input. Validate and sanitize every parameter, header, and request body.</p>
+
+      <h3>Implement Schema Validation</h3>
+
+      <p>Use validation libraries to enforce strict input schemas:</p>
+
+      <pre><code>// Using Joi for Node.js validation
+const Joi = require('joi');
+
+const userSchema = Joi.object({
+  username: Joi.string()
+    .alphanum()
+    .min(3)
+    .max(30)
+    .required(),
+  
+  email: Joi.string()
+    .email()
+    .required(),
+  
+  age: Joi.number()
+    .integer()
+    .min(18)
+    .max(120)
+});
+
+app.post('/api/users', (req, res) => {
+  const { error, value } = userSchema.validate(req.body);
+  
+  if (error) {
+    return res.status(400).json({ 
+      error: 'Invalid input',
+      details: error.details 
+    });
+  }
+  
+  // Process validated data
+});</code></pre>
+
+      <h3>Prevent Injection Attacks</h3>
+
+      <p>Input validation helps prevent various injection attacks:</p>
+
+      <ul>
+        <li><strong>SQL Injection:</strong> Use parameterized queries</li>
+        <li><strong>NoSQL Injection:</strong> Validate object structures</li>
+        <li><strong>Command Injection:</strong> Never pass user input to system commands</li>
+        <li><strong>XML/YAML Injection:</strong> Use safe parsers with strict configurations</li>
+      </ul>
+
+      <pre><code>// Vulnerable to NoSQL injection
+db.users.find({ username: req.body.username });
+
+// Attacker sends: { "username": { "$gt": "" } }
+// Returns all users!
+
+// Secure - validate input type
+if (typeof req.body.username !== 'string') {
+  return res.status(400).json({ error: 'Invalid username' });
+}
+db.users.find({ username: req.body.username });</code></pre>
+
+      <h2 id="data-exposure">4. Prevent Data Exposure</h2>
+
+      <p>APIs often expose more data than necessary, creating security and privacy risks.</p>
+
+      <h3>Implement Proper Authorization</h3>
+
+      <p>Authentication confirms identity; authorization determines permissions:</p>
+
+      <pre><code>// Check if user can access this resource
+app.get('/api/users/:id', authenticate, async (req, res) => {
+  const requestedUserId = req.params.id;
+  const currentUserId = req.user.id;
+  
+  // Broken Object Level Authorization (BOLA) vulnerability
+  // if we skip this check:
+  if (requestedUserId !== currentUserId && !req.user.isAdmin) {
+    return res.status(403).json({ 
+      error: 'Forbidden - insufficient permissions' 
+    });
+  }
+  
+  const user = await User.findById(requestedUserId);
+  res.json(user);
+});</code></pre>
+
+      <h3>Use Response Filtering</h3>
+
+      <p>Return only the data the client needs:</p>
+
+      <pre><code>// Bad - exposes sensitive data
+app.get('/api/users/:id', async (req, res) => {
+  const user = await User.findById(req.params.id);
+  res.json(user);  // Includes password hash, internal IDs, etc.
+});
+
+// Good - filter response
+app.get('/api/users/:id', async (req, res) => {
+  const user = await User.findById(req.params.id);
+  
+  const safeUser = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    createdAt: user.createdAt
+  };
+  
+  res.json(safeUser);
+});</code></pre>
+
+      <div class="callout callout-warning">
+        <h4>⚠️ Common Data Exposure Issues</h4>
+        <p>Mass assignment vulnerabilities occur when APIs blindly accept all fields from requests. Always use explicit field mapping or validation to prevent users from modifying fields like isAdmin, role, or balance.</p>
+      </div>
+
+      <h3>Implement Pagination</h3>
+
+      <p>Prevent bulk data extraction by requiring pagination:</p>
+
+      <pre><code>app.get('/api/users', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const skip = (page - 1) * limit;
+  
+  const users = await User.find()
+    .skip(skip)
+    .limit(limit)
+    .select('-password');  // Exclude sensitive fields
+  
+  res.json({
+    page,
+    limit,
+    total: await User.countDocuments(),
+    data: users
+  });
+});</code></pre>
+
+      <h2 id="logging">5. Implement Comprehensive Logging</h2>
+
+      <p>Security monitoring is impossible without proper logging. Log all security-relevant events:</p>
+
+      <ul>
+        <li>Authentication attempts (success and failure)</li>
+        <li>Authorization failures</li>
+        <li>Input validation failures</li>
+        <li>Rate limit violations</li>
+        <li>Unusual access patterns</li>
+      </ul>
+
+      <h3>What to Log</h3>
+
+      <pre><code>// Security event logging
+const logSecurityEvent = (event, req) => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: event,
+    userId: req.user?.id || 'anonymous',
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+    endpoint: req.path,
+    method: req.method
+  }));
+};
+
+// Log failed authentication
+app.post('/api/login', async (req, res) => {
+  const user = await authenticate(req.body);
+  
+  if (!user) {
+    logSecurityEvent('AUTH_FAILED', req);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  
+  logSecurityEvent('AUTH_SUCCESS', req);
+  // ... continue
+});</code></pre>
+
+      <div class="callout callout-danger">
+        <h4>🚫 Never Log Sensitive Data</h4>
+        <p>Do not log passwords, API keys, tokens, credit card numbers, or personal information. If you must log sensitive operations, log only metadata (user ID, timestamp, action type) without the actual sensitive values.</p>
+      </div>
+
+      <h3>Set Up Alerts</h3>
+
+      <p>Implement real-time alerting for suspicious patterns:</p>
+
+      <ul>
+        <li>Multiple failed authentication attempts from same IP</li>
+        <li>Unusual spike in 403 (Forbidden) responses</li>
+        <li>Access attempts to sensitive endpoints</li>
+        <li>Repeated input validation failures</li>
+      </ul>
+
+      <h2 id="conclusion">Conclusion</h2>
+
+      <p>API security is not a one-time implementation but an ongoing process. These five practices form a solid foundation:</p>
+
+      <div class="checklist">
+        <h4>✓ Security Checklist</h4>
+        <ul>
+          <li>Implement strong authentication with JWT or OAuth 2.0</li>
+          <li>Enforce rate limiting on all endpoints, especially authentication</li>
+          <li>Validate all input with strict schema validation</li>
+          <li>Implement proper authorization and response filtering</li>
+          <li>Log security events and set up monitoring alerts</li>
+        </ul>
+      </div>
+
+      <p>Remember that security is layered. Each practice adds defense depth, ensuring that if one control fails, others provide backup protection.</p>
+
+      <p><strong>Additional Recommendations:</strong></p>
+      <ul>
+        <li>Always use HTTPS/TLS for API communications</li>
+        <li>Keep dependencies updated and scan for vulnerabilities regularly</li>
+        <li>Conduct regular security testing and penetration tests</li>
+        <li>Implement CORS policies correctly to prevent cross-origin attacks</li>
+        <li>Use API gateways for centralized security policy enforcement</li>
+      </ul>
+
+      <div class="callout">
+        <h4>📚 Continue Learning</h4>
+        <p>Practice these concepts using the OWASP API Security Top 10 as a guide. Tools like Postman, Burp Suite, and OWASP ZAP can help you test your API implementations for common vulnerabilities.</p>
+      </div>
+    </article>
+
+    <div class="article-footer">
+      <div class="share-buttons">
+        <span style="color:var(--muted);margin-right:0.5rem;">Share:</span>
+        <a href="#" class="share-btn">Twitter</a>
+        <a href="#" class="share-btn">LinkedIn</a>
+        <a href="#" class="share-btn">Copy Link</a>
+      </div>
+
+      <div class="nav-posts">
+        <a href="sql-injection-guide.html" class="nav-post">
+          <div class="nav-label">← Previous Post</div>
+          <div class="nav-title">Understanding SQL Injection: A Practical Guide</div>
+        </a>
+        <a href="ctf-walkthrough-web.html" class="nav-post" style="text-align:right;">
+          <div class="nav-label">Next Post →</div>
+          <div class="nav-title">CTF Walkthrough: Web Exploitation Challenge</div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Francis Kuria • <a href="../index.html">Portfolio</a> • <a href="index.html">Blog</a></p>
+    </div>
+  </footer>
+</body>
+</html>
