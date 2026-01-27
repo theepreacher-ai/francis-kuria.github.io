@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastering Burp Suite: Advanced Techniques — Francis Kuria</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #e0e0e0; background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%); min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(26, 26, 46, 0.8); backdrop-filter: blur(10px); padding: 20px 0; margin-bottom: 40px; border-bottom: 2px solid #3a86ff; }
+        nav { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .logo { font-size: 24px; font-weight: bold; color: #3a86ff; text-decoration: none; }
+        nav ul { display: flex; list-style: none; gap: 30px; }
+        nav a { color: #e0e0e0; text-decoration: none; transition: color 0.3s; }
+        nav a:hover { color: #3a86ff; }
+        .article-meta { color: #888; font-size: 14px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+        .tag { background: rgba(58, 134, 255, 0.2); padding: 5px 15px; border-radius: 20px; color: #3a86ff; font-size: 12px; text-transform: uppercase; }
+        h1 { font-size: 42px; color: #ffffff; margin-bottom: 20px; line-height: 1.2; }
+        h2 { font-size: 32px; color: #ffffff; margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #3a86ff; }
+        h3 { font-size: 24px; color: #3a86ff; margin: 30px 0 15px; }
+        p { margin-bottom: 20px; font-size: 17px; color: #d0d0d0; }
+        code { background: rgba(58, 134, 255, 0.1); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace; color: #3a86ff; }
+        pre { background: #0d1117; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; border-left: 4px solid #3a86ff; }
+        pre code { background: none; padding: 0; color: #e0e0e0; font-size: 14px; display: block; }
+        ul { margin: 20px 0 20px 40px; color: #d0d0d0; }
+        li { margin-bottom: 10px; font-size: 17px; }
+        .highlight { background: rgba(58, 134, 255, 0.1); border-left: 4px solid #3a86ff; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .back-link { display: inline-block; color: #3a86ff; text-decoration: none; margin-top: 40px; padding: 10px 20px; border: 2px solid #3a86ff; border-radius: 5px; transition: all 0.3s; }
+        .back-link:hover { background: #3a86ff; color: #ffffff; }
+        footer { text-align: center; padding: 40px 20px; color: #888; margin-top: 60px; border-top: 1px solid rgba(58, 134, 255, 0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="../index.html" class="logo">🛡️ Francis Kuria</a>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../index.html#work">Projects</a></li>
+                <li><a href="index.html">Blog</a></li>
+                <li><a href="../index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <article>
+            <div class="article-header">
+                <div class="article-meta">
+                    <span class="tag">⚙️ Burp Suite</span>
+                    <span class="tag">Tools</span>
+                    <span>📅 Dec 15, 2025</span>
+                    <span>⏱️ 11 min read</span>
+                </div>
+                <h1>Mastering Burp Suite: Advanced Techniques</h1>
+            </div>
+
+            <p>Burp Suite is the de facto standard for web application security testing. While most testers know how to use the proxy and repeater, Burp's true power lies in its advanced features. This guide explores techniques that will transform you from a basic user to a Burp power user.</p>
+
+            <h2>Advanced Scanning Workflows</h2>
+
+            <h3>Custom Scan Configurations</h3>
+            <p>Default scans miss nuanced vulnerabilities. Creating custom scan configurations for different application types dramatically improves results:</p>
+
+            <div class="highlight">
+                <h4>API-Specific Scan Configuration:</h4>
+                <ul>
+                    <li>Disable parameter pollution checks (APIs rarely vulnerable)</li>
+                    <li>Enable JSON-specific injection points</li>
+                    <li>Add custom injection points for headers like X-API-Key</li>
+                    <li>Configure appropriate authentication tokens</li>
+                    <li>Increase timeout values for slow endpoints</li>
+                </ul>
+            </div>
+
+            <h3>Macro-Based Authentication</h3>
+            <p>For complex authentication flows, macros maintain session state during scanning:</p>
+
+            <pre><code>1. Navigate to "Project options" → "Sessions"
+2. Add session handling rule
+3. Define macro:
+   - Record login sequence
+   - Extract session tokens using regex
+   - Configure token replacement in subsequent requests
+4. Set scope: Apply to Scanner, Repeater, etc.
+
+Regex for token extraction:
+"session_token":"([a-f0-9]{32})"
+
+Replacement in requests:
+Cookie: session_token=$macro_item_1$</code></pre>
+
+            <h2>Burp Extensions for Automation</h2>
+
+            <h3>Writing Custom Extensions</h3>
+            <p>Python extensions automate repetitive tasks. Here's a skeleton for processing HTTP traffic:</p>
+
+            <pre><code>from burp import IBurpExtender, IHttpListener
+
+class BurpExtender(IBurpExtender, IHttpListener):
+    def registerExtenderCallbacks(self, callbacks):
+        self._callbacks = callbacks
+        self._helpers = callbacks.getHelpers()
+        callbacks.setExtensionName("Custom Analyzer")
+        callbacks.registerHttpListener(self)
+    
+    def processHttpMessage(self, toolFlag, messageIsRequest, messageInfo):
+        # Only process responses from Proxy
+        if toolFlag == self._callbacks.TOOL_PROXY and not messageIsRequest:
+            response = messageInfo.getResponse()
+            analyzedResponse = self._helpers.analyzeResponse(response)
+            headers = analyzedResponse.getHeaders()
+            
+            # Check for security headers
+            security_headers = [
+                'X-Frame-Options',
+                'Content-Security-Policy',
+                'Strict-Transport-Security'
+            ]
+            
+            missing = []
+            for header in security_headers:
+                if not any(header in h for h in headers):
+                    missing.append(header)
+            
+            if missing:
+                # Highlight in Burp
+                messageInfo.setHighlight("red")
+                messageInfo.setComment("Missing: " + ", ".join(missing))</code></pre>
+
+            <h3>Essential Third-Party Extensions</h3>
+            <ul>
+                <li><strong>Turbo Intruder</strong>: High-speed attacks beyond Intruder's limits</li>
+                <li><strong>Autorize</strong>: Automated authorization testing</li>
+                <li><strong>Logger++</strong>: Advanced request/response logging with grep</li>
+                <li><strong>JSON Web Tokens</strong>: JWT manipulation and analysis</li>
+                <li><strong>Param Miner</strong>: Discover hidden parameters</li>
+                <li><strong>Upload Scanner</strong>: File upload vulnerability testing</li>
+            </ul>
+
+            <h2>Intruder Attack Patterns</h2>
+
+            <h3>Pitchfork for Credential Stuffing</h3>
+            <p>Use Pitchfork attack type to test username:password pairs simultaneously:</p>
+
+            <pre><code>Position 1: §username§
+Position 2: §password§
+
+Payload Set 1 (usernames):
+admin
+user
+test
+
+Payload Set 2 (passwords):
+admin123
+password
+test123
+
+Result: Tests admin:admin123, user:password, test:test123 in parallel</code></pre>
+
+            <h3>Cluster Bomb for Parameter Mining</h3>
+            <p>Discover hidden parameters by testing multiple injection points:</p>
+
+            <pre><code>GET /api/user?§param1§=§value1§ HTTP/1.1
+
+Payload Set 1 (parameters):
+id
+userId
+user_id
+uid
+
+Payload Set 2 (values):
+1
+2
+../../../etc/passwd
+' OR '1'='1
+
+Tests all combinations (4 × 4 = 16 requests)</code></pre>
+
+            <h3>Recursive Grep for Token Refresh</h3>
+            <p>Extract values from responses and use in subsequent requests:</p>
+
+            <pre><code>1. Options → Grep - Extract
+2. Add item: "csrf_token":"([a-f0-9]{32})"
+3. Intruder → Options → Redirections
+4. Configure: Follow redirections, update tokens
+
+Result: Automatically extracts and uses fresh CSRF tokens</code></pre>
+
+            <h2>Collaborator for Out-of-Band Testing</h2>
+
+            <h3>Detecting Blind Vulnerabilities</h3>
+            <p>Burp Collaborator detects issues that don't show in-band responses:</p>
+
+            <div class="highlight">
+                <h4>SSRF Detection:</h4>
+                <pre><code>POST /api/webhook HTTP/1.1
+
+{"url": "http://BURP-COLLABORATOR-SUBDOMAIN"}
+
+Monitor Collaborator for:
+- DNS lookups (confirms SSRF)
+- HTTP requests (shows request content)
+- SMTP interactions (email exfiltration)</code></pre>
+            </div>
+
+            <h3>Custom Collaborator Payloads</h3>
+            <pre><code>XXE payload with Collaborator:
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe"&gt;
+]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;
+
+Blind SQLi with DNS exfiltration:
+'; EXEC master..xp_dirtree '//BURP-COLLABORATOR-SUBDOMAIN/a' --
+
+Blind command injection:
+; nslookup BURP-COLLABORATOR-SUBDOMAIN
+; curl http://BURP-COLLABORATOR-SUBDOMAIN</code></pre>
+
+            <h2>Match and Replace for Testing</h2>
+
+            <h3>Automated Security Header Removal</h3>
+            <p>Test if application relies on client-side security:</p>
+
+            <pre><code>Proxy → Options → Match and Replace
+
+Remove CSP:
+Type: Response header
+Match: Content-Security-Policy: .*
+Replace: [empty]
+
+Downgrade HTTPS:
+Type: Request header
+Match: ^Host: (.*)$
+Replace: Host: $1\nX-Forwarded-Proto: http</code></pre>
+
+            <h3>JWT Manipulation</h3>
+            <pre><code>Bypass signature validation:
+Match: "alg":"HS256"
+Replace: "alg":"none"
+
+Escalate privileges:
+Match: "role":"user"
+Replace: "role":"admin"</code></pre>
+
+            <h2>Advanced Target Scope Management</h2>
+
+            <h3>Regex-Based Scope Rules</h3>
+            <p>Create precise scope definitions using regex:</p>
+
+            <pre><code>Include in scope:
+^https?://([a-z0-9]+\.)?target\.com.*
+
+Exclude from scope:
+^https?://([a-z0-9]+\.)?target\.com/logout.*
+^https?://([a-z0-9]+\.)?target\.com/static/.*
+
+Advanced regex for subdomains:
+^https?://(api|admin|staging)\.target\.com.*</code></pre>
+
+            <h2>Sitemap Manipulation</h2>
+
+            <h3>Importing Custom Endpoints</h3>
+            <p>Add endpoints from API documentation or source code analysis:</p>
+
+            <pre><code>Right-click Target → "Add item to scope"
+
+For OpenAPI/Swagger specs:
+1. Parse JSON/YAML specification
+2. Extract all endpoints
+3. Send GET requests to each endpoint
+4. Automatically populates sitemap
+
+Python script to generate Burp requests:
+import json
+
+with open('swagger.json') as f:
+    spec = json.load(f)
+
+for path, methods in spec['paths'].items():
+    for method in methods.keys():
+        print(f"{method.upper()} https://api.target.com{path}")</code></pre>
+
+            <h2>Sequencer for Randomness Testing</h2>
+
+            <h3>Analyzing Session Token Entropy</h3>
+            <pre><code>1. Capture token generation request
+2. Send to Sequencer
+3. Configure token location (cookie/parameter)
+4. Start live capture (minimum 100 samples)
+5. Analyze results:
+   - Overall entropy
+   - Character distribution
+   - Sequential patterns
+   - Bit-level randomness
+
+Red flags:
+- Entropy < 64 bits
+- Predictable patterns
+- Time-based generation
+- Low character variety</code></pre>
+
+            <h2>Repeater Advanced Features</h2>
+
+            <h3>Request Engine Settings</h3>
+            <div class="highlight">
+                <ul>
+                    <li><strong>HTTP/2</strong>: Test HTTP/2-specific vulnerabilities (request smuggling)</li>
+                    <li><strong>Update Content-Length</strong>: Auto-calculate for modified requests</li>
+                    <li><strong>Unpack gzip/deflate</strong>: View compressed responses</li>
+                    <li><strong>Follow redirections</strong>: Automatically follow 3xx responses</li>
+                    <li><strong>Process cookies</strong>: Maintain session state across requests</li>
+                </ul>
+            </div>
+
+            <h3>Repeater Tabs Organization</h3>
+            <p>Organize testing by vulnerability class:</p>
+            <pre><code>Tab Groups:
+- Authentication (login, register, password reset)
+- Authorization (IDOR, privilege escalation)
+- Injection (SQLi, XSS, command injection)
+- Business Logic (race conditions, price manipulation)
+
+Color coding:
+- Red: Exploitable vulnerabilities
+- Orange: Potential issues
+- Yellow: Information disclosure
+- Green: Confirmed safe</code></pre>
+
+            <h2>Comparer for Response Analysis</h2>
+
+            <h3>Detecting Subtle Differences</h3>
+            <p>Compare responses to identify authentication bypasses or logic flaws:</p>
+
+            <pre><code>Use cases:
+1. Valid vs invalid credentials (timing, response length)
+2. Different user roles (content differences)
+3. Rate limiting behavior (response codes)
+4. Error message variations (information leakage)
+
+Comparer modes:
+- Words: Identify text differences
+- Bytes: Find binary differences
+- Headers: Compare HTTP headers</code></pre>
+
+            <h2>Pro Tips and Workflow Optimization</h2>
+
+            <h3>Keyboard Shortcuts</h3>
+            <pre><code>Essential shortcuts:
+Ctrl+R: Send to Repeater
+Ctrl+I: Send to Intruder
+Ctrl+Shift+B: Base64 encode/decode
+Ctrl+Shift+U: URL encode/decode
+Ctrl+F: Search across all tools
+
+Custom hotkeys (User options → Misc → Hotkeys):
+F1: Toggle intercept
+F2: Forward intercepted request
+F3: Drop intercepted request</code></pre>
+
+            <h3>Performance Optimization</h3>
+            <ul>
+                <li>Increase Java heap size: <code>java -jar -Xmx4g burpsuite_pro.jar</code></li>
+                <li>Disable unnecessary passive scanner checks</li>
+                <li>Use target scope to limit traffic capture</li>
+                <li>Regularly clear proxy history</li>
+                <li>Save project files to SSD for faster loading</li>
+            </ul>
+
+            <h2>Collaborative Testing</h2>
+
+            <h3>Sharing Project Files</h3>
+            <p>Export/import project states for team collaboration:</p>
+
+            <pre><code>Export options:
+- Save project file (.burp)
+- Export site map (XML/HTML)
+- Export issues (XML/HTML)
+- Export configuration (JSON)
+
+Best practices:
+1. Use project files for active testing sessions
+2. Export issues for reporting
+3. Share configurations for consistent testing
+4. Document custom extensions and settings</code></pre>
+
+            <h2>Conclusion</h2>
+
+            <p>Mastering Burp Suite requires moving beyond basic proxy usage. By leveraging advanced features like custom extensions, Collaborator, sophisticated Intruder attacks, and efficient workflows, you'll discover vulnerabilities that automated scanners miss.</p>
+
+            <p>The key is practice. Start incorporating one advanced technique per week into your testing routine. Over time, these techniques will become second nature, making you a significantly more effective security tester.</p>
+
+            <p>Remember: Burp Suite is just a tool. The real power comes from understanding web security fundamentals and knowing when and how to apply each feature.</p>
+
+            <a href="index.html" class="back-link">← Back to Blog</a>
+        </article>
+    </div>
+
+    <footer>
+        <p>© 2026 Francis Kuria • Sharing security knowledge, one post at a time</p>
+    </footer>
+</body>
+</html>
